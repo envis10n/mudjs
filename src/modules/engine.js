@@ -21,6 +21,7 @@ timers.after = (delay = 1, cb) => {
         timers.delete(timer.id);
         timer = null;
     });
+    return timer;
 }
 
 timers.nextTick = (cb) => {
@@ -31,6 +32,7 @@ timers.nextTick = (cb) => {
         timers.delete(timer.id);
         timer = null;
     });
+    return timer;
 }
 
 world.timers = timers;

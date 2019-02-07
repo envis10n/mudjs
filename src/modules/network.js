@@ -18,7 +18,10 @@ module.exports.load = () => {
             socket.internal.current_prompt = null;
             socket._send = socket.send;
             socket.send = (obj) => {
-                socket._send(JSON.stringify(Object.assign({ts: Date.now()}, obj)));
+                if(socket.readyState == 1){
+                    socket._send(JSON.stringify(Object.assign({ts: Date.now()}, obj)));
+                    return true;
+                } else return false;
             }
             socket.ask = (prompt, mask = false) => {
                 return new Promise((resolve, reject)=>{
@@ -50,6 +53,12 @@ module.exports.load = () => {
                                 let args = command.slice(1);
                             }
                         break;
+                        case "keep-alive":
+                            socket.keep_alive = engine.world.timers.after(25000, () => {
+                                socket.keep_alive = null;
+                                socket.send({event: "keep-alive"});
+                            });
+                        break;
                     }
                 } catch(e) {
 
@@ -59,9 +68,15 @@ module.exports.load = () => {
                 console.log(`${socket.uuid}::Error: ${err}`);
             });
             socket.on('close', (code, reason) => {
+                if(socket.keep_alive !== null) {
+                    engine.world.timers.delete(socket.keep_alive.id);
+                }
                 engine.network.clients.delete(socket.uuid);
             });
             engine.network.clients.set(socket.uuid, socket);
+
+            // Start keep-alive loop
+            socket.send({event:"keep-alive"});
         });
     });
 }
