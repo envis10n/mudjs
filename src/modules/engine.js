@@ -43,3 +43,4 @@ network.clients = new Map();
 
 module.exports.network = network;
 module.exports.world = world;
+module.exports.db = require('./database');

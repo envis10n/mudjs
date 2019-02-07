@@ -9,6 +9,7 @@
   "license": "None",
   "private": true,
   "dependencies": {
+    "arangojs": "^6.10.0",
     "dotenv": "^6.2.0",
     "uuid": "^3.3.2",
     "ws": "^6.1.3"
