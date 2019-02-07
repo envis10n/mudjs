@@ -11,4 +11,8 @@ let network = require('./src/modules/network');
 
     // Load network layer.
     let wss = await network.load();
+
+    engine.world.timers.after(5000, () => {
+        console.log("Timer complete!");
+    });
 })();
