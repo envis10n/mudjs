@@ -7,7 +7,7 @@
         engine.grapevine.chat.send(context.caller.name, message, "gossip");
         engine.network.clients.broadcast({
             event: "print",
-            payload: `[gossip] ${context.caller.name} says, ${message}`
+            payload: `${context.caller.name} says, "${message}"`
         })
     }
 })
