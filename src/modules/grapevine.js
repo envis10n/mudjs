@@ -43,6 +43,16 @@ gv.connect = () => {
                                 event: "print",
                                 payload: "Connection to grapevine established."
                             });
+                            for(let channel of JSON.parse(process.env.GV_CHANNELS)){
+                                setTimeout(()=>{
+                                    ws.send({
+                                       event: "channels/subscribe",
+                                       payload: {
+                                           channel
+                                       } 
+                                    });
+                                }, 1000);
+                            }
                         }
                     break;
                     case "heartbeat":
