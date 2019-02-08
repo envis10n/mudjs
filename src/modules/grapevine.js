@@ -47,6 +47,7 @@ gv.connect = () => {
                                 setTimeout(()=>{
                                     ws.send({
                                        event: "channels/subscribe",
+                                       ref: util.uuid(),
                                        payload: {
                                            channel
                                        } 
