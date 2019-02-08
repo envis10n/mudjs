@@ -60,6 +60,7 @@ module.exports.load_ws = () => {
                                 socket.internal.current_prompt(dobj.command);
                             } else {
                                 // Handle command
+                                if(dobj.command == "") return;
                                 let command = dobj.command.split(' ');
                                 let cmd = command[0];
                                 let args = command.slice(1);
@@ -180,6 +181,7 @@ module.exports.load_telnet = () => {
             socket.print = socket.send;
             socket.on('data', async (data) => {
                 data = data.toString().trim();
+                if(data == "") return;
                 if(socket.internal.current_prompt !== null){
                     socket.internal.current_prompt(data);
                 } else {
