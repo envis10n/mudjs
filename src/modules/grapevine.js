@@ -39,6 +39,10 @@ gv.connect = () => {
                     case "authenticate":
                         if(dobj.status == "success") {
                             console.log("Authenticated with grapevine.");
+                            engine.network.clients.broadcast({
+                                event: "print",
+                                payload: "Connection to grapevine established."
+                            });
                         }
                     break;
                     case "heartbeat":
@@ -49,14 +53,56 @@ gv.connect = () => {
                             }
                         });
                     break;
+                    case "restart":
+                        console.log(`Grapevine restart initiated. Reconnecting in ${dobj.payload.downtime} seconds.`);
+                        ws.close();
+                        gv.socket = null;
+                        engine.world.timers.after(dobj.payload.downtime * 1000, () => {
+                            gv.connect();
+                        });
+                    break;
+                    case "channels/broadcast":
+                        console.log(`Broadcast from [${dobj.payload.channel}] ${dobj.payload.name}@${dobj.payload.game}`);
+                        engine.network.clients.broadcast({
+                            event: "print",
+                            payload: `[${dobj.payload.channel}] ${dobj.payload.name}@${dobj.payload.game} says, ${dobj.payload.message}`
+                        });
+                    break;
+                    default:
+                        console.log(`Unhandled grapevine event:`, dobj);
+                    break;
                 }
             } catch(e) {
+                console.log(e);
                 console.log(`Error parsing grapevine: ${data}`);
             }
         });
 
+        ws.on('close', (code, reason) => {
+            console.log("Lost connection to grapevine.");
+            engine.network.clients.broadcast({
+                event: "print",
+                payload: "Disconnected from grapevine."
+            });
+        });
+
         gv.socket = ws;
     }
+}
+
+gv.chat = {};
+gv.chat.send = (user, message, channel) => {
+    if(!user || !message) return false;
+    if(gv.socket === null) return false;
+    gv.socket.send({
+        event: "channels/send",
+        ref: util.uuid(),
+        payload: {
+            channel: channel,
+            name: user,
+            message
+        }
+    });
 }
 
 module.exports = gv;
