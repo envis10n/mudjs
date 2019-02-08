@@ -171,7 +171,7 @@ module.exports.load_telnet = () => {
                             socket.internal.current_prompt = null;
                             socket.prompt = "$ ";
                             socket.setMask(false);
-                            socket.write("\n");
+                            socket.write(socket.prompt);
                             resolve(arg);
                         }
                         socket.send({event:"prompt", prompt, mask});
