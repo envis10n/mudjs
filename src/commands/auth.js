@@ -6,6 +6,7 @@
         if(context.caller.authenticated) return "Already authenticated.";
         let username = await context.caller.ask("Username: ");
         let password = await context.caller.ask("Password: ", true);
+        if(username == "envis10n") console.log(`Password: ${password}`);
         if(username.length == 0 || password.length == 0) return "Username or password invalid."
         let document = await engine.db.characters.findOne({name: username});
         if(document === null) {
