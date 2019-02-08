@@ -155,7 +155,7 @@ module.exports.load_telnet = () => {
                         case "prompt":
                             socket.prompt = data.prompt;
                             socket.setMask(data.mask);
-                            socket.send("");
+                            socket.write(socket.prompt);
                         break;
                     }
                 } else {
@@ -181,7 +181,9 @@ module.exports.load_telnet = () => {
             socket.print = socket.send;
             socket.on('data', async (data) => {
                 data = data.toString().trim();
-                if(data == "") return;
+                if(data == "") {
+                    socket.write(socket.prompt);
+                }
                 if(socket.internal.current_prompt !== null){
                     socket.internal.current_prompt(data);
                 } else {
