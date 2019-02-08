@@ -114,6 +114,7 @@ module.exports.load_ws = () => {
 
             // Start keep-alive loop
             socket.send({event:"keep-alive"});
+            socket.send("Welcome to MUD.js!\n\nLogin (or create a character) with `auth`");
         });
     });
 }
@@ -217,7 +218,7 @@ module.exports.load_telnet = () => {
                 engine.network.clients.delete(socket.uuid);
             });
             engine.network.clients.set(socket.uuid, socket);
-            socket.write("$ ");
+            socket.write("Welcome to MUD.js!\n\nLogin (or create a character) with `auth`\n$ ");
         }).listen(23);
         resolve(tnet);
     });
