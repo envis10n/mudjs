@@ -11,6 +11,7 @@
   "dependencies": {
     "arangojs": "^6.10.0",
     "dotenv": "^6.2.0",
+    "telnet": "https://github.com/TooTallNate/node-telnet.git",
     "uuid": "^3.3.2",
     "ws": "^6.1.3"
   }

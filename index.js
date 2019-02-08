@@ -16,7 +16,8 @@ let network = require('./src/modules/network');
     engine.grapevine = grapevine;
 
     // Load network layer.
-    let wss = await network.load();
+    let wss = await network.load_ws();
+    let telnet = await network.load_telnet();
     if(process.env.GV_ENABLED == "true") {
         console.log("Connecting to Grapevine...");
         engine.grapevine.connect();

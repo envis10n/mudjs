@@ -1,7 +1,17 @@
 const WebSocket = require('ws');
+const Telnet = require('telnet');
 let engine = require('./engine');
 
-module.exports.load = () => {
+const protocols = {
+    WS: 0,
+    TELNET: 1,
+    0: "WS",
+    1: "TELNET"
+};
+
+module.exports.protocols = protocols;
+
+module.exports.load_ws = () => {
     return new Promise((resolve, reject)=>{
         let wss = new WebSocket.Server({
             host: process.env.WS_HOST,
@@ -12,12 +22,14 @@ module.exports.load = () => {
         });
         wss.on('connection', (socket) => {
             socket.uuid = util.uuid();
+            socket.type = protocols.WS;
             socket.authenticated = false;
             socket.name = null;
             socket.internal = {};
             socket.internal.current_prompt = null;
             socket._send = socket.send;
             socket.send = (obj) => {
+                if(typeof obj == "string") obj = {event: "print", payload: obj};
                 if(socket.readyState == 1){
                     socket._send(JSON.stringify(Object.assign({ts: Date.now()}, obj)));
                     return true;
@@ -103,5 +115,110 @@ module.exports.load = () => {
             // Start keep-alive loop
             socket.send({event:"keep-alive"});
         });
+    });
+}
+
+module.exports.load_telnet = () => {
+    return new Promise((resolve, reject)=>{
+        let tnet = Telnet.createServer((socket) => {
+            socket.uuid = util.uuid();
+            socket.authenticated = false;
+            socket.name = null;
+            socket.type = protocols.TELNET;
+            socket.do.transmit_binary();
+            socket.prompt = "$ ";
+            socket.masked = false;
+            socket.setMask = (n) => {
+                socket.masked = n;
+                if(n == true) {
+                    socket.will.echo();
+                } else {
+                    socket.wont.echo();
+                }
+            }
+            socket.internal = {
+                current_prompt: null
+            };
+            socket.addPrompt = (input) => {
+                if(input.length > 0) return `${input}\n${socket.prompt}`;
+                else return socket.prompt;
+            }
+            socket.send = (data) => {
+                if(typeof data == "object") {
+                    switch(data.event){
+                        case "print":
+                            data = data.payload;
+                            socket.send(data);
+                        break;
+                        case "prompt":
+                            socket.prompt = data.prompt;
+                            socket.setMask(data.mask);
+                            socket.send("");
+                        break;
+                    }
+                } else {
+                    data = Buffer.concat([Buffer.from("\r"+data), Buffer.from("\n"+socket.prompt)]);
+                    socket.write(data);
+                }
+            }
+            socket.ask = (prompt, mask = false) => {
+                return new Promise((resolve, reject)=>{
+                    if(socket.internal.current_prompt !== null) reject("Prompt already active.");
+                    else {
+                        socket.internal.current_prompt = (arg) => {
+                            socket.internal.current_prompt = null;
+                            socket.prompt = "$ ";
+                            socket.setMask(false);
+                            socket.write("\n");
+                            resolve(arg);
+                        }
+                        socket.send({event:"prompt", prompt, mask});
+                    }
+                });
+            }
+            socket.print = socket.send;
+            socket.on('data', async (data) => {
+                data = data.toString().trim();
+                if(socket.internal.current_prompt !== null){
+                    socket.internal.current_prompt(data);
+                } else {
+                    // Handle command
+                    let command = data.split(' ');
+                    let cmd = command[0];
+                    let args = command.slice(1);
+                    switch(cmd){
+                        default:
+                            command = engine.commands.get(cmd);
+                            if(command){
+                                let argv = util.parse_arguments(args, command.options || []);
+                                try {
+                                    let character;
+                                    if(socket.authenticated) {
+                                        character = await engine.db.characters.findOne({name: socket.name});
+                                    }
+                                    if(command.permissions.find(el=>el == "ADMINISTRATOR") && character.acct_level < 3) return;
+                                    let res = await command.handler({
+                                        caller: socket,
+                                        character
+                                    }, argv.args, argv.flags);
+                                    if(res !== undefined && res !== null) socket.print(res);
+                                } catch(e) {
+                                    console.log(e);
+                                    socket.send(`Error: ${e.message}`);
+                                }
+                            } else {
+                                socket.send(`Unknown command: ${cmd}`);
+                            }
+                        break;
+                    }
+                }
+            });
+            socket.on('close', ()=>{
+                engine.network.clients.delete(socket.uuid);
+            });
+            engine.network.clients.set(socket.uuid, socket);
+            socket.write("$ ");
+        }).listen(23);
+        resolve(tnet);
     });
 }
