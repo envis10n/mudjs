@@ -183,6 +183,7 @@ module.exports.load_telnet = () => {
                 data = data.toString().trim();
                 if(data == "") {
                     socket.write(socket.prompt);
+                    return;
                 }
                 if(socket.internal.current_prompt !== null){
                     socket.internal.current_prompt(data);
