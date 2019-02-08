@@ -51,6 +51,31 @@ module.exports.load = () => {
                                 let command = dobj.command.split(' ');
                                 let cmd = command[0];
                                 let args = command.slice(1);
+                                switch(cmd){
+                                    default:
+                                        command = engine.commands.get(cmd);
+                                        if(command){
+                                            let argv = util.parse_arguments(args, command.options || []);
+                                            try {
+                                                let character;
+                                                if(socket.authenticated) {
+                                                    character = await engine.db.characters.findOne({name: socket.name});
+                                                }
+                                                if(command.permissions.find(el=>el == "ADMINISTRATOR") && character.acct_level < 3) return;
+                                                let res = await command.handler({
+                                                    caller: socket,
+                                                    character
+                                                }, argv.args, argv.flags);
+                                                if(res !== undefined && res !== null) socket.print(res);
+                                            } catch(e) {
+                                                console.log(e);
+                                                socket.print(`Error: ${e.message}`);
+                                            }
+                                        } else {
+                                            socket.print(`Unknown command: ${cmd}`);
+                                        }
+                                    break;
+                                }
                             }
                         break;
                         case "keep-alive":

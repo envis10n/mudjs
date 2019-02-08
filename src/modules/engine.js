@@ -1,5 +1,6 @@
 const EventEmitter = require('events');
 const Timer = require('../classes/timer');
+const path = require('path');
 
 // World engine data.
 let world = new EventEmitter();
@@ -46,3 +47,5 @@ network.clients = new Map();
 module.exports.network = network;
 module.exports.world = world;
 module.exports.db = require('./database');
+module.exports.commands = require('./commands');
+module.exports.commands.load_all();

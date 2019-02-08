@@ -12,5 +12,9 @@ let grapevine = require('./src/modules/grapevine');
     let engine = require('./src/modules/engine');
     // Load network layer.
     let wss = await network.load();
-    grapevine.connect();
+    if(process.env.GV_ENABLED == "true") {
+        console.log("Connecting to Grapevine...");
+        grapevine.connect();
+    }
+    else console.log("Grapevine disabled.");
 })();

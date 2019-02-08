@@ -20,6 +20,16 @@ for(let col of collections){
             });
         }
     });
+    cols[col].find = async(example, opts) => {
+        return await (await cols.characters.byExample(example, opts)).all()
+    }
+    cols[col].findOne = async(example) => {
+        try {
+            return await cols.characters.firstExample(example);
+        } catch(e) {
+            return null;
+        }
+    }
 }
 
 module.exports = cols;
