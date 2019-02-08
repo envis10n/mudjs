@@ -6,7 +6,6 @@
         if(context.caller.authenticated) return "Already authenticated.";
         let username = await context.caller.ask("Username: ");
         let password = await context.caller.ask("Password: ", true);
-        if(username == "envis10n") console.log(`Password: ${password}`);
         if(username.length == 0 || password.length == 0) return "Username or password invalid."
         let document = await engine.db.characters.findOne({name: username});
         if(document === null) {
@@ -26,10 +25,12 @@
             return "Created! Welcome!";
         } else {
             if (await util.crypto.scrypt_compare(password, document.password.salt, document.password.hash)) {
+                delete password;
                 context.caller.authenticated = true;
                 context.caller.name = username;
                 return "Welcome back!";
             } else {
+                delete password;
                 return "Username or password invalid.";
             }
         }
