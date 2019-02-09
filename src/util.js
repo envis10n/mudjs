@@ -1,6 +1,8 @@
 const uuidv4 = require('uuid/v4');
 const crypto = require('crypto');
 const _p = require('util').promisify;
+const Path = require('path');
+const fs = require('fs');
 
 const scrypt = _p(crypto.scrypt);
 
@@ -133,6 +135,18 @@ util.hasPermissions = (required, current) => {
         }
     }
     return res;
+}
+
+util.fs = {};
+util.fs.readFile = async (path) => {
+    let root = process.cwd();
+    path = Path.join(root, path);
+    return (await _p(fs.readFile)(path)).toString();
+}
+util.fs.writeFile = async (path, data) => {
+    let root = process.cwd();
+    path = Path.join(root, path);
+    await _p(fs.writeFile)(path, data);
 }
 
 global.util = util;

@@ -55,10 +55,11 @@ gv.connect = () => {
                         });
                     break;
                     case "restart":
-                        console.log(`Grapevine restart initiated. Reconnecting in ${dobj.payload.downtime} seconds.`);
+                        if(typeof dobj.payload.downtime != "number") dobj.payload.downtime = Number(dobj.payload.downtime);
+                        console.log(`Grapevine restart initiated. Reconnecting in ${dobj.payload.downtime+15} seconds.`);
                         ws.close();
                         gv.socket = null;
-                        engine.world.timers.after(dobj.payload.downtime * 1000, () => {
+                        engine.world.timers.after((dobj.payload.downtime+15) * 1000, () => {
                             gv.connect();
                         });
                     break;

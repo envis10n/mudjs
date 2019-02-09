@@ -4,13 +4,6 @@ let engine = require('./engine');
 let handlers = require('./handlers');
 let chalk = require('chalk');
 
-let pre = `${chalk.green('Welcome to')}
-${chalk.greenBright(`• ▌ ▄ ·. ▄• ▄▌·▄▄▄▄      ▐▄▄▄.▄▄ · 
-·██ ▐███▪█▪██▌██▪ ██      ·██▐█ ▀. 
-▐█ ▌▐▌▐█·█▌▐█▌▐█· ▐█▌   ▪▄ ██▄▀▀▀█▄
-██ ██▌▐█▌▐█▄█▌██. ██    ▐▌▐█▌▐█▄▪▐█
-▀▀  █▪▀▀▀ ▀▀▀ ▀▀▀▀▀•  ${chalk.green('▀')}  ▀▀▀• ▀▀▀▀ `)}\n`;
-
 const protocols = {
     WS: 0,
     TELNET: 1,
@@ -29,7 +22,7 @@ module.exports.load_ws = () => {
             console.log(`WebSocket listening on ${process.env.WS_HOST}:${process.env.WS_PORT}...`);
             resolve(wss);
         });
-        wss.on('connection', (socket) => {
+        wss.on('connection', async (socket) => {
             socket.uuid = util.uuid();
             socket.type = protocols.WS;
             socket.authenticated = false;
@@ -37,6 +30,7 @@ module.exports.load_ws = () => {
             socket.internal = {};
             socket.internal.current_prompt = null;
             socket._send = socket.send;
+            console.log(`${protocols[socket.type]} Client ${socket.uuid} connected.`);
             socket.send = (obj) => {
                 if(typeof obj == "string") obj = {event: "print", payload: obj};
                 if(socket.readyState == 1){
@@ -92,13 +86,14 @@ module.exports.load_ws = () => {
                 }, err => {
 
                 });
+                console.log(`${protocols[socket.type]} Client ${socket.uuid} disconnected.`);
                 engine.network.clients.delete(socket.uuid);
             });
             engine.network.clients.set(socket.uuid, socket);
 
             // Start keep-alive loop
             socket.send({event:"keep-alive"});
-            socket.send(pre);
+            socket.send(await util.fs.readFile("welcome.txt"));
             handlers.connect(socket);
         });
     });
@@ -106,7 +101,7 @@ module.exports.load_ws = () => {
 
 module.exports.load_telnet = () => {
     return new Promise((resolve, reject)=>{
-        let tnet = Telnet.createServer((socket) => {
+        let tnet = Telnet.createServer(async (socket) => {
             socket.uuid = util.uuid();
             socket.readyState = true;
             socket._write = socket.write;
@@ -125,6 +120,7 @@ module.exports.load_telnet = () => {
             socket.prompt = "";
             socket.default_prompt = "";
             socket.masked = false;
+            console.log(`${protocols[socket.type]} Client ${socket.uuid} connected.`);
             socket.close = () => {
                 socket.readyState = false;
                 socket.end();
@@ -191,6 +187,11 @@ module.exports.load_telnet = () => {
                 }
                 handlers.command(socket, data);
             });
+            socket.on('error', (err) => {
+                if(err.code != "ECONNRESET"){
+                    console.log(`Telnet client error: ${err.message}`);
+                }
+            });
             socket.on('close', ()=>{
                 engine.db.accounts.findOne({_key: socket.user}).then(user => {
                     user.online = false;
@@ -198,10 +199,11 @@ module.exports.load_telnet = () => {
                 }, err => {
 
                 });
+                console.log(`${protocols[socket.type]} Client ${socket.uuid} disconnected.`);
                 engine.network.clients.delete(socket.uuid);
             });
             engine.network.clients.set(socket.uuid, socket);
-            socket.write(pre);
+            socket.write(await util.fs.readFile("welcome.txt"));
             handlers.connect(socket);
         }).listen(23);
         resolve(tnet);
