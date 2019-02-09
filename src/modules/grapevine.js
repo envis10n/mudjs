@@ -66,7 +66,7 @@ gv.connect = () => {
                         console.log(`Broadcast from [${dobj.payload.channel}] ${dobj.payload.name}@${dobj.payload.game}`);
                         engine.network.clients.broadcast({
                             event: "print",
-                            payload: `${chalk.blue(`${dobj.payload.name}@${dobj.payload.game}`)} says, ${chalk.green(`"${dobj.payload.message}"`)}`
+                            payload: `${chalk.blueBright(`${dobj.payload.name}@${dobj.payload.game}`)} ${chalk.white('says,')} ${chalk.greenBright(`"${dobj.payload.message}"`)}`
                         });
                     break;
                     default:
