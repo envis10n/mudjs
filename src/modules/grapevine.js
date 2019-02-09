@@ -1,6 +1,7 @@
 const EventEmitter = require('events');
 const WebSocket = require('ws');
 let engine = require('./engine');
+let chalk = require('chalk');
 
 let gv = new EventEmitter();
 
@@ -65,7 +66,7 @@ gv.connect = () => {
                         console.log(`Broadcast from [${dobj.payload.channel}] ${dobj.payload.name}@${dobj.payload.game}`);
                         engine.network.clients.broadcast({
                             event: "print",
-                            payload: `${dobj.payload.name}@${dobj.payload.game} says, "${dobj.payload.message}"`
+                            payload: `${chalk.blue(`${dobj.payload.name}@${dobj.payload.game}`)} says, ${chalk.green(`"${dobj.payload.message}"`)}`
                         });
                     break;
                     default:

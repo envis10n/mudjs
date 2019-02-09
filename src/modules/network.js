@@ -2,6 +2,14 @@ const WebSocket = require('ws');
 const Telnet = require('telnet');
 let engine = require('./engine');
 let handlers = require('./handlers');
+let chalk = require('chalk');
+
+let pre = `${chalk.green('Welcome to')}
+${chalk.greenBright(`• ▌ ▄ ·. ▄• ▄▌·▄▄▄▄      ▐▄▄▄.▄▄ · 
+·██ ▐███▪█▪██▌██▪ ██      ·██▐█ ▀. 
+▐█ ▌▐▌▐█·█▌▐█▌▐█· ▐█▌   ▪▄ ██▄▀▀▀█▄
+██ ██▌▐█▌▐█▄█▌██. ██    ▐▌▐█▌▐█▄▪▐█
+▀▀  █▪▀▀▀ ▀▀▀ ▀▀▀▀▀•  ${chalk.green('▀')}  ▀▀▀• ▀▀▀▀ `)}\n`;
 
 const protocols = {
     WS: 0,
@@ -44,7 +52,7 @@ module.exports.load_ws = () => {
                             socket.internal.current_prompt = null;
                             resolve(arg);
                         }
-                        socket.send({event:"prompt", prompt, mask});
+                        socket.send({event:"prompt", prompt: prompt, mask});
                     }
                 });
             }
@@ -90,7 +98,7 @@ module.exports.load_ws = () => {
 
             // Start keep-alive loop
             socket.send({event:"keep-alive"});
-            socket.send("\nWelcome to MUD.js!\n\n");
+            socket.send(pre);
             handlers.connect(socket);
         });
     });
@@ -100,6 +108,16 @@ module.exports.load_telnet = () => {
     return new Promise((resolve, reject)=>{
         let tnet = Telnet.createServer((socket) => {
             socket.uuid = util.uuid();
+            socket.readyState = true;
+            socket._write = socket.write;
+            socket.write = (data) => {
+                try {
+                    if(!socket.readyState) return;
+                    socket._write(data);
+                } catch(e) {
+                    socket.readyState = false;
+                }
+            }
             socket.authenticated = false;
             socket.name = null;
             socket.type = protocols.TELNET;
@@ -107,7 +125,12 @@ module.exports.load_telnet = () => {
             socket.prompt = "";
             socket.default_prompt = "";
             socket.masked = false;
+            socket.close = () => {
+                socket.readyState = false;
+                socket.end();
+            }
             socket.setMask = (n) => {
+                if(!socket.readyState) return;
                 socket.masked = n;
                 if(n == true) {
                     socket.will.echo();
@@ -158,6 +181,9 @@ module.exports.load_telnet = () => {
                 });
             }
             socket.print = socket.send;
+            socket.on('end', ()=>{
+                socket.readyState = false;
+            });
             socket.on('data', async (data) => {
                 data = data.toString().trim();
                 if(data == "") {
@@ -175,7 +201,7 @@ module.exports.load_telnet = () => {
                 engine.network.clients.delete(socket.uuid);
             });
             engine.network.clients.set(socket.uuid, socket);
-            socket.write("\nWelcome to MUD.js!\n\n");
+            socket.write(pre);
             handlers.connect(socket);
         }).listen(23);
         resolve(tnet);

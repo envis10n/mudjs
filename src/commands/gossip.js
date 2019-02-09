@@ -6,6 +6,6 @@
         if(!context.caller.authenticated) return "You are not logged in.";
         let message = args.join(" ");
         engine.grapevine.chat.send(context.caller.name, message, "gossip");
-        engine.network.clients.broadcast(`${context.caller.name} says, "${message}"`);
+        engine.network.clients.broadcast(`${chalk.blueBright(context.caller.name)} ${chalk.white('says,')} ${chalk.greenBright(`"${message}"`)}`);
     }
 })

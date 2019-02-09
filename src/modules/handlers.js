@@ -13,7 +13,7 @@ module.exports.connect = async (client) => {
         client.send("Attempt limit reached.");
         client.close();
     }
-    let username = await client.ask("Welcome! What is your name? ");
+    let username = await client.ask("What is your name? ");
     if(!(new RegExp(/[a-zA-Z]/g)).test(username)) {
         client.send("Names may only contain a-z and A-Z.");
         module.exports.connect(client);
@@ -53,6 +53,7 @@ module.exports.connect = async (client) => {
             if(!(await util.crypto.scrypt_compare(password, user.password.salt, user.password.hash))){
                 client.login_attempts += 1;
                 client.send("Incorrect password.");
+                module.exports.connect(client);
             } else {
                 client.authenticated = true;
                 client.name = user.username;

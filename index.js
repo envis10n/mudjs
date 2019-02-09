@@ -1,6 +1,9 @@
 // Global utilities
 require('./src/util');
 
+let chalk = require('chalk');
+chalk.level = 2;
+
 // Network module
 let network = require('./src/modules/network');
 

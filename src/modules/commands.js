@@ -5,6 +5,7 @@ const asyncDir = _p(fs.readdir);
 const vm = require('vm');
 const Path = require('path');
 let commands = new Map();
+let chalk = require('chalk');
 
 commands.load_command = async (path) => {
     let code = (await asyncRead(path)).toString();
@@ -12,7 +13,8 @@ commands.load_command = async (path) => {
         engine: require('./engine'),
         console,
         require,
-        util
+        util,
+        chalk
     });
     commands.set(command.name, command);
 }
