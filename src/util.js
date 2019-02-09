@@ -122,4 +122,17 @@ util.crypto.scrypt_compare = async (password, salt, hash) => {
     return h == hash;
 }
 
+util.hasPermissions = (required, current) => {
+    let res = true;
+    if(current.findIndex(el=>el=="ADMINSTRATOR") == -1 && required.length > 0) {
+        for(let r1 of required){
+            if(!current.find(el=>el==r1)){
+                res = false;
+                break;
+            }
+        }
+    }
+    return res;
+}
+
 global.util = util;

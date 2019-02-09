@@ -21,11 +21,25 @@ for(let col of collections){
         }
     });
     cols[col].find = async(example, opts) => {
-        return await (await cols.characters.byExample(example, opts)).all()
+        let list = await (await cols[col].byExample(example, opts)).all()
+        list.forEach((doc, i)=>{
+            doc.update = async () => {
+                let d = Object.assign({}, doc);
+                delete d.update;
+                await cols[col].replace(d._key, d);
+            }
+        });
+        return list;
     }
     cols[col].findOne = async(example) => {
         try {
-            return await cols.characters.firstExample(example);
+            let doc = await cols[col].firstExample(example);
+            doc.update = async () => {
+                let d = Object.assign({}, doc);
+                delete d.update;
+                await cols[col].replace(d._key, d);
+            }
+            return doc;
         } catch(e) {
             return null;
         }

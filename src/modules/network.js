@@ -1,6 +1,7 @@
 const WebSocket = require('ws');
 const Telnet = require('telnet');
 let engine = require('./engine');
+let handlers = require('./handlers');
 
 const protocols = {
     WS: 0,
@@ -56,40 +57,8 @@ module.exports.load_ws = () => {
                     let dobj = JSON.parse(message);
                     switch(dobj.request){
                         case "command":
-                            if(socket.internal.current_prompt !== null){
-                                socket.internal.current_prompt(dobj.command);
-                            } else {
-                                // Handle command
-                                if(dobj.command == "") return;
-                                let command = dobj.command.split(' ');
-                                let cmd = command[0];
-                                let args = command.slice(1);
-                                switch(cmd){
-                                    default:
-                                        command = engine.commands.get(cmd);
-                                        if(command){
-                                            let argv = util.parse_arguments(args, command.options || []);
-                                            try {
-                                                let character;
-                                                if(socket.authenticated) {
-                                                    character = await engine.db.characters.findOne({name: socket.name});
-                                                }
-                                                if(command.permissions.find(el=>el == "ADMINISTRATOR") && character.acct_level < 3) return;
-                                                let res = await command.handler({
-                                                    caller: socket,
-                                                    character
-                                                }, argv.args, argv.flags);
-                                                if(res !== undefined && res !== null) socket.print(res);
-                                            } catch(e) {
-                                                console.log(e);
-                                                socket.print(`Error: ${e.message}`);
-                                            }
-                                        } else {
-                                            socket.print(`Unknown command: ${cmd}`);
-                                        }
-                                    break;
-                                }
-                            }
+                            if(dobj.command == "") return;
+                            handlers.command(socket, dobj);
                         break;
                         case "keep-alive":
                             socket.keep_alive = engine.world.timers.after(25000, () => {
@@ -109,13 +78,20 @@ module.exports.load_ws = () => {
                 if(socket.keep_alive !== null) {
                     engine.world.timers.delete(socket.keep_alive.id);
                 }
+                engine.db.accounts.findOne({_key: socket.user}).then(user => {
+                    user.online = false;
+                    user.update();
+                }, err => {
+
+                });
                 engine.network.clients.delete(socket.uuid);
             });
             engine.network.clients.set(socket.uuid, socket);
 
             // Start keep-alive loop
             socket.send({event:"keep-alive"});
-            socket.send("Welcome to MUD.js!\n\nLogin (or create a character) with `auth`");
+            socket.send("\nWelcome to MUD.js!\n\n");
+            handlers.connect(socket);
         });
     });
 }
@@ -128,7 +104,8 @@ module.exports.load_telnet = () => {
             socket.name = null;
             socket.type = protocols.TELNET;
             socket.do.transmit_binary();
-            socket.prompt = "$ ";
+            socket.prompt = "";
+            socket.default_prompt = "";
             socket.masked = false;
             socket.setMask = (n) => {
                 socket.masked = n;
@@ -144,6 +121,9 @@ module.exports.load_telnet = () => {
             socket.addPrompt = (input) => {
                 if(input.length > 0) return `${input}\n${socket.prompt}`;
                 else return socket.prompt;
+            }
+            socket.setPrompt = (prompt) => {
+                socket.default_prompt = prompt;
             }
             socket.send = (data) => {
                 if(typeof data == "object") {
@@ -169,7 +149,7 @@ module.exports.load_telnet = () => {
                     else {
                         socket.internal.current_prompt = (arg) => {
                             socket.internal.current_prompt = null;
-                            socket.prompt = "$ ";
+                            socket.prompt = socket.default_prompt;
                             socket.setMask(false);
                             resolve(arg);
                         }
@@ -181,48 +161,22 @@ module.exports.load_telnet = () => {
             socket.on('data', async (data) => {
                 data = data.toString().trim();
                 if(data == "") {
-                    socket.write(socket.prompt);
                     return;
                 }
-                if(socket.internal.current_prompt !== null){
-                    socket.internal.current_prompt(data);
-                } else {
-                    // Handle command
-                    let command = data.split(' ');
-                    let cmd = command[0];
-                    let args = command.slice(1);
-                    switch(cmd){
-                        default:
-                            command = engine.commands.get(cmd);
-                            if(command){
-                                let argv = util.parse_arguments(args, command.options || []);
-                                try {
-                                    let character;
-                                    if(socket.authenticated) {
-                                        character = await engine.db.characters.findOne({name: socket.name});
-                                    }
-                                    if(command.permissions.find(el=>el == "ADMINISTRATOR") && character.acct_level < 3) return;
-                                    let res = await command.handler({
-                                        caller: socket,
-                                        character
-                                    }, argv.args, argv.flags);
-                                    if(res !== undefined && res !== null) socket.print(res);
-                                } catch(e) {
-                                    console.log(e);
-                                    socket.send(`Error: ${e.message}`);
-                                }
-                            } else {
-                                socket.send(`Unknown command: ${cmd}`);
-                            }
-                        break;
-                    }
-                }
+                handlers.command(socket, data);
             });
             socket.on('close', ()=>{
+                engine.db.accounts.findOne({_key: socket.user}).then(user => {
+                    user.online = false;
+                    user.update();
+                }, err => {
+
+                });
                 engine.network.clients.delete(socket.uuid);
             });
             engine.network.clients.set(socket.uuid, socket);
-            socket.write("Welcome to MUD.js!\n\nLogin (or create a character) with `auth`\n$ ");
+            socket.write("\nWelcome to MUD.js!\n\n");
+            handlers.connect(socket);
         }).listen(23);
         resolve(tnet);
     });
