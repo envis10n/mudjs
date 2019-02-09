@@ -21,6 +21,7 @@ module.exports.connect = async (client) => {
         let user = await engine.db.accounts.findOne({username: username});
         if(user === null){
             let password = await client.ask("Create your account by entering a password: ", true);
+            if(client.type == protocols.TELNET) client.write("\n");
             let password2 = await client.ask("Retype password: ", true);
             if(password != password2) {
                 client.send("Passwords did not match.");
