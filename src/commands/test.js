@@ -3,7 +3,7 @@
     permissions: [],
     options: [],
     handler: async function(context = {}, args = [], options = {}){
-        let answer = await context.caller.ask("What is your favorite color? ");
-        return `Ah, ${answer} is your favorite color!`;
+        let classes = engine.game.classes.getDescriptions();
+        return classes.map(cl=>`[${cl.name}]\n\t${cl.description}`).join('\n\n');
     }
 })

@@ -158,7 +158,7 @@ module.exports.load_telnet = () => {
                         break;
                     }
                 } else {
-                    data = Buffer.concat([Buffer.from("\r"+data), Buffer.from("\n"+socket.prompt)]);
+                    data = Buffer.concat([Buffer.from('\n'+data), Buffer.from("\n"+socket.prompt)]);
                     socket.write(data);
                 }
             }
