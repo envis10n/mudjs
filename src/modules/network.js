@@ -154,7 +154,7 @@ module.exports.load_telnet = () => {
                         case "prompt":
                             socket.prompt = data.prompt;
                             socket.setMask(data.mask);
-                            socket.write(socket.prompt);
+                            socket.write('\n'+socket.prompt);
                         break;
                     }
                 } else {
