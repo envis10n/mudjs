@@ -2,7 +2,6 @@ const WebSocket = require('ws');
 const Telnet = require('telnet');
 let engine = require('./engine');
 let handlers = require('./handlers');
-let chalk = require('chalk');
 
 const protocols = {
     WS: 0,
