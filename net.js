@@ -4,6 +4,7 @@ ipc.config.id = "mudjs_net";
 ipc.config.retry = 1500;
 ipc.config.silent = true;
 let servers = new Map();
+let engine = null;
 let server_cb = new Map();
 function get_clients(key){
     return new Promise((resolve, reject)=>{
@@ -17,19 +18,30 @@ function get_clients(key){
 ipc.serve(()=>{
     // Load network layer.
     let telnet = fork("net/telnet.js", [], {cwd: process.cwd()});
+    telnet.on("message", (message)=>{
+        if(engine == null) return;
+        switch(message.event){
+            case "sync":
+                console.log("Received sync response from telnet.");
+                let cb = server_cb.get("telnet");
+                if(cb) cb(message.clients);
+            break;
+            default:
+                ipc.server.emit(socket, "message", message);
+            break;
+        }
+    });
     servers.set("telnet", telnet);
     ipc.server.on("connect", (socket)=>{
-        telnet.on("message", (message)=>{
-            switch(message.event){
-                case "sync":
-                    console.log("Received sync response from telnet.");
-                    let cb = server_cb.get("telnet");
-                    if(cb) cb(message.clients);       
-                break;
-                default:
-                    ipc.server.emit(socket, "message", message);
-                break;
-            }
+        engine = socket;
+        servers.forEach(server=>{
+            server.send({event: "engine.connect"});
+        });
+    });
+    ipc.server.on("socket.disconnect", (...args)=>{
+        engine = null;
+        servers.forEach(server=>{
+            server.send({event:"engine.disconnect"});
         });
     });
     ipc.server.on("message", async (message, socket)=>{

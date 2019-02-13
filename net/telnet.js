@@ -46,6 +46,16 @@ process.on('message', (message) => {
                 }));
                 process.send({event: "sync", clients: c});
             break;
+            case "engine.connect":
+                clients.forEach(client=>{
+                    client.print("Connection to game service established.");
+                });
+            break;
+            case "engine.disconnect":
+                clients.forEach(client=>{
+                    client.print("Connection to game service lost.");
+                });
+            break;
         }
     }
 });
