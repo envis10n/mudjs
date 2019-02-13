@@ -166,4 +166,4 @@ Telnet.createServer(async (socket) => {
     socket.write(await readFile("welcome.txt"));
     clients.set(socket.uuid, socket);
     socket.ipc({event: "connect"});
-}).listen(23);
+}).listen(4000);
