@@ -11,6 +11,8 @@ function connectIPC(){
     return new Promise((resolve, reject)=>{
         ipc.connectTo("mudjs_net", () => {
             ipc.of.mudjs_net.on("connect", ()=>{
+                console.log("Requesting sync...");
+                ipc.of.mudjs_net.emit("message", {event: "sync"});
                 resolve();
             });
         });
@@ -86,8 +88,6 @@ function connectIPC(){
             break;
         }
     });
-    console.log("Requesting sync...");
-    ipc.of.mudjs_net.emit("message", {event: "sync"});
     ipc.of.mudjs_net.on("disconnect", ()=>{
         engine.network.clients.clear();
     });
