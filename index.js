@@ -91,6 +91,10 @@ function connectIPC(){
     ipc.of.mudjs_net.on("disconnect", ()=>{
         engine.network.clients.clear();
     });
+    // Load plugins.
+    let plugins = require('./src/modules/plugins');
+    await plugins.load();
+
     // Load grapevine.
     let grapevine = require('./src/modules/grapevine');
 
