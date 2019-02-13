@@ -7,7 +7,7 @@ const readFile = _p(fs.readFile);
 function log(...args){
     let date = new Date();
     let stamp = `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
-    console.log(`[${stamp}]`, ...args);
+    console.log(`[${stamp}][TELNET]`, ...args);
 }
 
 let clients = new Map();
@@ -79,7 +79,7 @@ Telnet.createServer(async (socket) => {
     socket.prompt = "";
     socket.default_prompt = "";
     socket.masked = false;
-    log(`[TELNET][${socket.uuid}] Connected`);
+    log(`[${socket.uuid}] Connected`);
     socket.ipc = (obj) => {
         process.send(Object.assign({ts: Date.now(), uuid: socket.uuid, protocol: "telnet"}, obj));
     }
@@ -155,7 +155,7 @@ Telnet.createServer(async (socket) => {
     });
     socket.on('error', (err) => {
         if(err.code != "ECONNRESET"){
-            log(`[TELNET][${socket.uuid}][ERROR]: ${err.message}`);
+            log(`[${socket.uuid}][ERROR]: ${err.message}`);
         }
     });
     socket.on('close', ()=>{

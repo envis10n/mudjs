@@ -12,6 +12,7 @@ class Socket extends EventEmitter {
         this.internal.current_prompt = null;
         this.name = null;
         this.user = null;
+        this.keep_alive = null;
     }
     auth(){
         this.emit("send", {

@@ -31,7 +31,22 @@ ipc.serve(()=>{
             break;
         }
     });
+    let websocket = fork("net/websocket.js", [], {cwd: process.cwd()});
+    websocket.on("message", (message)=>{
+        if(engine == null) return;
+        switch(message.event){
+            case "sync":
+                console.log("Received sync response from websocket.");
+                let cb = server_cb.get("websocket");
+                if(cb) cb(message.clients);
+            break;
+            default:
+                ipc.server.emit(engine, "message", message);
+            break;
+        }
+    });
     servers.set("telnet", telnet);
+    servers.set("websocket", websocket);
     ipc.server.on("connect", (socket)=>{
         engine = socket;
         servers.forEach(server=>{
@@ -49,9 +64,10 @@ ipc.serve(()=>{
             case "sync":
                 console.log("Received sync request.");
                 let telnet_clients = await get_clients("telnet");
+                let websocket_clients = await get_clients("websocket");
                 ipc.server.emit(socket, "message", {
                     event: "sync",
-                    clients: telnet_clients
+                    clients: [...telnet_clients, ...websocket_clients]
                 });
                 console.log("Sync response sent.");
             break;
@@ -59,6 +75,9 @@ ipc.serve(()=>{
                 switch(message.protocol){
                     case "telnet":
                         telnet.send(message);
+                    break;
+                    case "websocket":
+                        websocket.send(message);
                     break;
                 }
             break;

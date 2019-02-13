@@ -33,6 +33,9 @@ function connectIPC(){
                 });
                 socket.on("close", ()=>{
                     engine.network.clients.delete(socket.uuid);
+                    if(socket.keep_alive !== null){
+                        engine.world.timers.delete(socket.keep_alive.id);
+                    }
                     socket = null;
                 });
                 engine.network.clients.set(socket.uuid, socket);
@@ -64,9 +67,21 @@ function connectIPC(){
                     });
                     nclient.on("close", ()=>{
                         engine.network.clients.delete(nclient.uuid);
+                        if(socket.keep_alive !== null){
+                            engine.world.timers.delete(socket.keep_alive.id);
+                        }
                         nclient = null;
                     });
                     engine.network.clients.set(nclient.uuid, nclient);
+                }
+            break;
+            case "keep-alive":
+                socket = engine.network.clients.get(message.uuid);
+                if(socket){
+                    socket.keep_alive = engine.world.timers.after(25000, () => {
+                        socket.keep_alive = null;
+                        socket.send({event: "keep-alive"});
+                    });
                 }
             break;
         }
