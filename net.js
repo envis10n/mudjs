@@ -48,13 +48,15 @@ ipc.serve(()=>{
     servers.set("telnet", telnet);
     servers.set("websocket", websocket);
     ipc.server.on("connect", (socket)=>{
+        console.log("Engine connected.");
         engine = socket;
         servers.forEach(server=>{
             server.send({event: "engine.connect"});
         });
     });
-    ipc.server.on("socket.disconnect", (...args)=>{
+    ipc.server.on("socket.disconnected", (...args)=>{
         engine = null;
+        console.log("Engine disconnected");
         servers.forEach(server=>{
             server.send({event:"engine.disconnect"});
         });
