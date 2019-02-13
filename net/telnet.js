@@ -47,7 +47,11 @@ Telnet.createServer(async (socket) => {
     socket.default_prompt = "";
     socket.masked = false;
     log(`[TELNET][${socket.uuid}] Connected`);
+    socket.ipc = (obj) => {
+        process.send(Object.assign({ts: Date.now(), uuid: socket.uuid, protocol: "telnet"}, obj));
+    }
     socket.close = () => {
+        socket.ipc({event: "close"});
         socket.readyState = false;
         socket.end();
     }
@@ -87,9 +91,6 @@ Telnet.createServer(async (socket) => {
             data = Buffer.concat([Buffer.from('\n'+data), Buffer.from("\n"+socket.prompt)]);
             socket.write(data);
         }
-    }
-    socket.ipc = (obj) => {
-        process.send(Object.assign({ts: Date.now(), uuid: socket.uuid, protocol: "telnet"}, obj));
     }
     socket.ask = (prompt, mask = false) => {
         return new Promise((resolve, reject)=>{

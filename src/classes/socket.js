@@ -42,6 +42,7 @@ class Socket extends EventEmitter {
     }
     close(){
         this.emit("send", {event: "close", uuid: this.uuid, protocol: this.protocol, ts: Date.now()});
+        this.emit("close");
     }
 }
 

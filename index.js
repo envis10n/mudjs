@@ -31,8 +31,17 @@ function connectIPC(){
                 socket.on("send", (obj) => {
                     ipc.of.mudjs_net.emit("message", obj);
                 });
+                socket.on("close", ()=>{
+                    engine.network.clients.delete(socket.uuid);
+                });
                 engine.network.clients.set(socket.uuid, socket);
                 handlers.connect(socket);
+            break;
+            case "close":
+                socket = socket = engine.network.clients.get(message.uuid);
+                if(socket){
+                    socket.emit("close");
+                }
             break;
             case "command":
                 socket = engine.network.clients.get(message.uuid);
