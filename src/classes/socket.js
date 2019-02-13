@@ -13,6 +13,15 @@ class Socket extends EventEmitter {
         this.name = null;
         this.user = null;
     }
+    auth(){
+        this.emit("send", {
+            event: "auth",
+            uuid: this.uuid,
+            protocol: this.protocol,
+            ts: Date.now(),
+            args: [{user: this.user, name: this.name}]
+        });
+    }
     ask(prompt, mask = false){
         return new Promise((resolve, reject)=>{
             if(this.internal.current_prompt !== null) reject("Prompt already active.");

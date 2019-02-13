@@ -61,6 +61,7 @@ module.exports.connect = async (client) => {
                 user.last_login = Date.now();
                 user.online = true;
                 user.update();
+                client.auth();
                 client.send("Character creation is currently disabled.");
             }
         }

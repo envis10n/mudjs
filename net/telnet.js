@@ -15,16 +15,36 @@ let clients = new Map();
 process.on('message', (message) => {
     let socket = clients.get(message.uuid);
     if(socket) {
+        let dobj;
         switch(message.event){
             case "close":
                 socket.close();
             break;
             case "ask":
-                let dobj = message.args[0];
+                dobj = message.args[0];
                 socket.ask(dobj.prompt, dobj.mask);
             break;
             case "send":
                 socket.send(...message.args);
+            break;
+            case "auth":
+                dobj = message.args[0];
+                socket.authenticated = true;
+                socket.name = dobj.name;
+                socket.user = dobj.user;
+            break;
+        }
+    } else {
+        switch(message.event){
+            case "sync":
+                let c = Array.from(clients).map(el=>el[1]).map(el=>({
+                    uuid: el.uuid,
+                    authenticated: el.authenticated,
+                    name: el.name,
+                    user: el.user,
+                    protocol: "telnet"
+                }));
+                process.send({event: "sync", clients: c});
             break;
         }
     }
@@ -34,6 +54,9 @@ Telnet.createServer(async (socket) => {
     socket.uuid = uuid();
     socket.readyState = true;
     socket._write = socket.write;
+    socket.authenticated = false;
+    socket.user = null;
+    socket.name = null;
     socket.write = (data) => {
         try {
             if(!socket.readyState) return;
@@ -128,6 +151,7 @@ Telnet.createServer(async (socket) => {
     socket.on('close', ()=>{
         log(`[TELNET][${socket.uuid}] Disconnected`);
         clients.delete(socket.uuid);
+        socket.ipc({event: "close"});
     });
     socket.write(await readFile("welcome.txt"));
     clients.set(socket.uuid, socket);

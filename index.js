@@ -33,12 +33,13 @@ function connectIPC(){
                 });
                 socket.on("close", ()=>{
                     engine.network.clients.delete(socket.uuid);
+                    socket = null;
                 });
                 engine.network.clients.set(socket.uuid, socket);
                 handlers.connect(socket);
             break;
             case "close":
-                socket = socket = engine.network.clients.get(message.uuid);
+                socket = engine.network.clients.get(message.uuid);
                 if(socket){
                     socket.emit("close");
                 }
@@ -49,8 +50,29 @@ function connectIPC(){
                     handlers.command(socket, message.data);
                 }
             break;
+            case "sync":
+                console.log("Sync response received.");
+                engine.network.clients.clear();
+                message.clients = message.clients.filter(el=>el);
+                for(let client of message.clients){
+                    let nclient = new Socket(client.uuid, client.protocol);
+                    nclient.authenticated = client.authenticated;
+                    nclient.name = client.name;
+                    nclient.user = client.user;
+                    nclient.on("send", (obj) => {
+                        ipc.of.mudjs_net.emit("message", obj);
+                    });
+                    nclient.on("close", ()=>{
+                        engine.network.clients.delete(nclient.uuid);
+                        nclient = null;
+                    });
+                    engine.network.clients.set(nclient.uuid, nclient);
+                }
+            break;
         }
     });
+    console.log("Requesting sync...");
+    ipc.of.mudjs_net.emit("message", {event: "sync"});
     ipc.of.mudjs_net.on("disconnect", ()=>{
         engine.network.clients.clear();
     });
