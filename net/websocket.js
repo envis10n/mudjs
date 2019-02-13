@@ -125,6 +125,7 @@ wss.on('connection', async (socket) => {
     socket.on('close', (code, reason) => {
         log(`[${socket.uuid}] Disconnected`);
         clients.delete(socket.uuid);
+        socket.ipc({event: "close"});
     });
     clients.set(socket.uuid, socket);
 
