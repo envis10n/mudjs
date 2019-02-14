@@ -80,7 +80,7 @@ module.exports.command = async (socket, dobj) => {
         let args = command.slice(1);
         switch(cmd){
             default:
-                command = engine.commands.get(cmd);
+                command = engine.commands.get_command(cmd);
                 if(command){
                     let argv = util.parse_arguments(args, command.options || []);
                     try {
